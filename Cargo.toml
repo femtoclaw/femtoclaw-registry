@@ -1,0 +1,31 @@
+[package]
+name = "femtoclaw-registry"
+version = "1.0.3"
+edition = "2021"
+license = "Apache-2.0"
+description = "FemtoClaw Talon Registry - Publish, discover, and manage Talons (agent capabilities)"
+repository = "https://github.com/femtoclaw/femtoclaw-registry.git"
+keywords = ["talon", "registry", "agent", "capability", "skill"]
+categories = ["command-line-utilities"]
+
+[dependencies]
+anyhow = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+tokio = { version = "1", features = ["full"] }
+reqwest = { version = "0.12", features = ["json"] }
+clap = { version = "4", features = ["derive"] }
+dirs = "6"
+walkdir = "2"
+semver = "1"
+tempfile = "3"
+
+[dev-dependencies]
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+opt-level = "z"
