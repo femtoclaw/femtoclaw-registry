@@ -1,59 +1,59 @@
-// loader.rs - This file is part of FemtoClaw
-// Copyright (c) 2026 FemtoClaw Developers and Contributors
-// Description:
-//     Talon Loader - Load talons into FemtoClaw runtime.
-//     Provides functionality for loading talons, retrieving capabilities,
-//     and generating system prompts from talon definitions.
-
-//! Talon Loader - Load talons into FemtoClaw.
+//! Skill Loader - Load skills into FemtoClaw.
 
 use anyhow::Result;
 use std::path::PathBuf;
 
-use crate::{TalonInfo, TalonManifest, TalonRegistry};
+use crate::{SkillInfo, SkillManifest, SkillRegistry};
 
-pub struct TalonLoader {
-    registry: TalonRegistry,
+const SKILL_MANIFEST: &str = "SKILL.md";
+const TALON_MANIFEST: &str = "SKILL.md";
+
+pub struct SkillLoader {
+    registry: SkillRegistry,
 }
 
-impl TalonLoader {
+impl SkillLoader {
     pub fn new() -> Result<Self> {
-        let registry = TalonRegistry::new()?;
+        let registry = SkillRegistry::new()?;
         Ok(Self { registry })
     }
 
     pub fn from_dir(dir: PathBuf) -> Result<Self> {
-        let registry = TalonRegistry::from_dir(dir)?;
+        let registry = SkillRegistry::from_dir(dir)?;
         Ok(Self { registry })
     }
 
-    pub fn discover_and_load(&mut self) -> Result<Vec<TalonInfo>> {
-        self.registry.discover_talons()
+    pub fn discover_and_load(&mut self) -> Result<Vec<SkillInfo>> {
+        self.registry.discover_skills()
     }
 
-    pub fn load_talon(&self, name: &str) -> Result<TalonInfo> {
+    pub fn load_skill(&self, name: &str) -> Result<SkillInfo> {
         let entry = self
             .registry
-            .get_talon(name)
-            .ok_or_else(|| anyhow::anyhow!("Talon '{}' not found", name))?;
+            .get_skill(name)
+            .ok_or_else(|| anyhow::anyhow!("Skill '{}' not found", name))?;
 
-        let manifest_path = entry.path.join("TALON.md");
+        let manifest_path = if entry.path.join(SKILL_MANIFEST).exists() {
+            entry.path.join(SKILL_MANIFEST)
+        } else {
+            entry.path.join(TALON_MANIFEST)
+        };
         let content = std::fs::read_to_string(&manifest_path)?;
-        let manifest = TalonManifest::parse(&content)?;
+        let manifest = SkillManifest::parse(&content)?;
 
-        Ok(TalonInfo {
+        Ok(SkillInfo {
             manifest,
             path: entry.path.clone(),
             installed: true,
         })
     }
 
-    pub fn get_capabilities(&self, name: &str) -> Result<Vec<TalonCapability>> {
-        let talon = self.load_talon(name)?;
+    pub fn get_capabilities(&self, name: &str) -> Result<Vec<SkillCapability>> {
+        let skill = self.load_skill(name)?;
         let mut capabilities = Vec::new();
 
-        for cmd in &talon.manifest.commands {
-            capabilities.push(TalonCapability {
+        for cmd in &skill.manifest.commands {
+            capabilities.push(SkillCapability {
                 name: format!("{}.{}", name, cmd.name),
                 description: cmd.description.clone(),
                 args: cmd
@@ -72,19 +72,19 @@ impl TalonLoader {
     }
 
     pub fn generate_system_prompt(&self, names: &[String]) -> Result<String> {
-        let mut prompt = String::from("Available Talons:\n\n");
+        let mut prompt = String::from("Available Skills:\n\n");
 
         for name in names {
-            if let Ok(talon) = self.load_talon(name) {
+            if let Ok(skill) = self.load_skill(name) {
                 prompt.push_str(&format!(
                     "## {} (v{})\n",
-                    talon.manifest.name, talon.manifest.version
+                    skill.manifest.name, skill.manifest.version
                 ));
-                prompt.push_str(&format!("{}\n\n", talon.manifest.description));
+                prompt.push_str(&format!("{}\n\n", skill.manifest.description));
 
-                if !talon.manifest.commands.is_empty() {
+                if !skill.manifest.commands.is_empty() {
                     prompt.push_str("Commands:\n");
-                    for cmd in &talon.manifest.commands {
+                    for cmd in &skill.manifest.commands {
                         prompt.push_str(&format!("- {}: {}\n", cmd.name, cmd.description));
                     }
                     prompt.push('\n');
@@ -94,18 +94,22 @@ impl TalonLoader {
 
         Ok(prompt)
     }
+
+    pub fn load_talon(&self, name: &str) -> Result<SkillInfo> {
+        self.load_skill(name)
+    }
 }
 
-impl Default for TalonLoader {
+impl Default for SkillLoader {
     fn default() -> Self {
         Self::new().unwrap_or_else(|_| Self {
-            registry: TalonRegistry::default(),
+            registry: SkillRegistry::default(),
         })
     }
 }
 
 #[derive(Debug, Clone)]
-pub struct TalonCapability {
+pub struct SkillCapability {
     pub name: String,
     pub description: String,
     pub args: Vec<CapabilityArg>,
@@ -117,3 +121,6 @@ pub struct CapabilityArg {
     pub r#type: String,
     pub required: bool,
 }
+
+pub type TalonLoader = SkillLoader;
+pub type TalonCapability = SkillCapability;

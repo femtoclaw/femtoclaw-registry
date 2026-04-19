@@ -3,9 +3,9 @@ name = "femtoclaw-registry"
 version = "1.0.3"
 edition = "2021"
 license = "Apache-2.0"
-description = "FemtoClaw Talon Registry - Publish, discover, and manage Talons (agent capabilities)"
+description = "FemtoClaw Skill Registry - Publish, discover, and manage Skills (agent capabilities)"
 repository = "https://github.com/femtoclaw/femtoclaw-registry.git"
-keywords = ["talon", "registry", "agent", "capability", "skill"]
+keywords = ["skill", "registry", "agent", "capability"]
 categories = ["command-line-utilities"]
 
 [dependencies]

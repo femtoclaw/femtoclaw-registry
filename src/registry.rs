@@ -1,11 +1,4 @@
-// registry.rs - This file is part of FemtoClaw
-// Copyright (c) 2026 FemtoClaw Developers and Contributors
-// Description:
-//     Talon Registry - Local talon management for FemtoClaw.
-//     Provides functionality for discovering, adding, removing, and searching
-//     for Talons in the local registry.
-
-//! Talon Registry - Local talon management.
+//! Skill Registry - Local skill management.
 
 use std::collections::HashMap;
 use std::fs;
@@ -15,16 +8,19 @@ use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use walkdir::WalkDir;
 
-use crate::{TalonInfo, TalonManifest};
+use crate::{SkillInfo, SkillManifest};
+
+const SKILL_MANIFEST: &str = "SKILL.md";
+const TALON_MANIFEST: &str = "SKILL.md";
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct TalonIndex {
-    pub talons: HashMap<String, TalonEntry>,
+pub struct SkillIndex {
+    pub skills: HashMap<String, SkillEntry>,
     pub version: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TalonEntry {
+pub struct SkillEntry {
     pub name: String,
     pub version: String,
     pub description: String,
@@ -35,25 +31,22 @@ pub struct TalonEntry {
     pub tags: Vec<String>,
 }
 
-pub struct TalonRegistry {
-    pub talons_dir: PathBuf,
-    index: TalonIndex,
+pub struct SkillRegistry {
+    pub skills_dir: PathBuf,
+    index: SkillIndex,
 }
 
-impl TalonRegistry {
+impl SkillRegistry {
     pub fn new() -> Result<Self> {
-        let talons_dir = dirs::data_dir()
-            .context("Could not find data directory")?
-            .join("femtoclaw")
-            .join("talons");
+        let skills_dir = default_skills_dir()?;
 
-        if !talons_dir.exists() {
-            fs::create_dir_all(&talons_dir)?;
+        if !skills_dir.exists() {
+            fs::create_dir_all(&skills_dir)?;
         }
 
-        let index = Self::load_index(&talons_dir)?;
+        let index = Self::load_index(&skills_dir)?;
 
-        Ok(Self { talons_dir, index })
+        Ok(Self { skills_dir, index })
     }
 
     pub fn from_dir(dir: PathBuf) -> Result<Self> {
@@ -64,63 +57,68 @@ impl TalonRegistry {
         let index = Self::load_index(&dir)?;
 
         Ok(Self {
-            talons_dir: dir,
+            skills_dir: dir,
             index,
         })
     }
 
-    fn load_index(talons_dir: &Path) -> Result<TalonIndex> {
-        let index_path = talons_dir.join("index.json");
+    fn load_index(skills_dir: &Path) -> Result<SkillIndex> {
+        let index_path = skills_dir.join("index.json");
 
         if index_path.exists() {
             let content = fs::read_to_string(&index_path)?;
-            let index: TalonIndex = serde_json::from_str(&content)?;
+            let index: SkillIndex = serde_json::from_str(&content)?;
             Ok(index)
         } else {
-            Ok(TalonIndex {
-                talons: HashMap::new(),
+            Ok(SkillIndex {
+                skills: HashMap::new(),
                 version: "1.0".to_string(),
             })
         }
     }
 
     pub fn save_index(&self) -> Result<()> {
-        let index_path = self.talons_dir.join("index.json");
+        let index_path = self.skills_dir.join("index.json");
         let content = serde_json::to_string_pretty(&self.index)?;
         fs::write(index_path, content)?;
         Ok(())
     }
 
-    pub fn discover_talons(&mut self) -> Result<Vec<TalonInfo>> {
+    pub fn discover_skills(&mut self) -> Result<Vec<SkillInfo>> {
         let mut discovered = Vec::new();
 
-        for entry in WalkDir::new(&self.talons_dir)
+        for entry in WalkDir::new(&self.skills_dir)
             .max_depth(2)
             .into_iter()
             .filter_map(|e| e.ok())
         {
             let path = entry.path();
-            if path.is_file() && path.file_name().is_some_and(|n| n == "TALON.md") {
-                if let Some(talon_path) = path.parent() {
-                    if let Ok(manifest) = fs::read_to_string(talon_path.join("TALON.md")) {
-                        if let Ok(manifest) = TalonManifest::parse(&manifest) {
+            if path.is_file()
+                && path
+                    .file_name()
+                    .is_some_and(|n| n == SKILL_MANIFEST || n == TALON_MANIFEST)
+            {
+                if let Some(skill_path) = path.parent() {
+                    let manifest_path = skill_path.join(path.file_name().unwrap());
+                    if let Ok(manifest) = fs::read_to_string(&manifest_path) {
+                        if let Ok(manifest) = SkillManifest::parse(&manifest) {
                             let name = manifest.name.clone();
 
-                            let entry = TalonEntry {
+                            let entry = SkillEntry {
                                 name: name.clone(),
                                 version: manifest.version.clone(),
                                 description: manifest.description.clone(),
                                 author: manifest.author.clone(),
                                 license: manifest.license.clone(),
-                                path: talon_path.to_path_buf(),
+                                path: skill_path.to_path_buf(),
                                 tags: manifest.tags.clone(),
                             };
 
-                            self.index.talons.insert(name.clone(), entry);
+                            self.index.skills.insert(name.clone(), entry);
 
-                            discovered.push(TalonInfo {
+                            discovered.push(SkillInfo {
                                 manifest,
-                                path: talon_path.to_path_buf(),
+                                path: skill_path.to_path_buf(),
                                 installed: true,
                             });
                         }
@@ -133,49 +131,49 @@ impl TalonRegistry {
         Ok(discovered)
     }
 
-    pub fn list_talons(&self) -> Vec<&TalonEntry> {
-        self.index.talons.values().collect()
+    pub fn list_skills(&self) -> Vec<&SkillEntry> {
+        self.index.skills.values().collect()
     }
 
-    pub fn get_talon(&self, name: &str) -> Option<&TalonEntry> {
-        self.index.talons.get(name)
+    pub fn get_skill(&self, name: &str) -> Option<&SkillEntry> {
+        self.index.skills.get(name)
     }
 
-    pub fn search_talons(&self, query: &str) -> Vec<&TalonEntry> {
+    pub fn search_skills(&self, query: &str) -> Vec<&SkillEntry> {
         let query_lower = query.to_lowercase();
         self.index
-            .talons
+            .skills
             .values()
-            .filter(|t| {
-                t.name.to_lowercase().contains(&query_lower)
-                    || t.description.to_lowercase().contains(&query_lower)
-                    || t.tags
+            .filter(|s| {
+                s.name.to_lowercase().contains(&query_lower)
+                    || s.description.to_lowercase().contains(&query_lower)
+                    || s.tags
                         .iter()
                         .any(|tag| tag.to_lowercase().contains(&query_lower))
             })
             .collect()
     }
 
-    pub fn add_talon(&mut self, path: PathBuf) -> Result<String> {
-        let talon_md = path.join("TALON.md");
-        if !talon_md.exists() {
-            anyhow::bail!("TALON.md not found in {}", path.display());
-        }
-
-        let content = fs::read_to_string(&talon_md)?;
-        let manifest = TalonManifest::parse(&content)?;
+    pub fn add_skill(&mut self, path: PathBuf) -> Result<String> {
+        let manifest_path = resolve_manifest_path(&path)?;
+        let content = fs::read_to_string(&manifest_path)?;
+        let manifest = SkillManifest::parse(&content)?;
         let name = manifest.name.clone();
 
-        let dest = self.talons_dir.join(&name);
+        let dest = self.skills_dir.join(&name);
         if dest.exists() {
             fs::remove_dir_all(&dest)?;
         }
         fs::create_dir_all(&dest)?;
         copy_dir_recursive(&path, &dest)?;
 
-        self.index.talons.insert(
+        if !dest.join(SKILL_MANIFEST).exists() && dest.join(TALON_MANIFEST).exists() {
+            fs::rename(dest.join(TALON_MANIFEST), dest.join(SKILL_MANIFEST))?;
+        }
+
+        self.index.skills.insert(
             name.clone(),
-            TalonEntry {
+            SkillEntry {
                 name: manifest.name,
                 version: manifest.version,
                 description: manifest.description,
@@ -190,8 +188,8 @@ impl TalonRegistry {
         Ok(name)
     }
 
-    pub fn remove_talon(&mut self, name: &str) -> Result<()> {
-        if let Some(entry) = self.index.talons.remove(name) {
+    pub fn remove_skill(&mut self, name: &str) -> Result<()> {
+        if let Some(entry) = self.index.skills.remove(name) {
             if entry.path.exists() {
                 fs::remove_dir_all(entry.path)?;
             }
@@ -199,15 +197,69 @@ impl TalonRegistry {
         }
         Ok(())
     }
+
+    pub fn discover_talons(&mut self) -> Result<Vec<SkillInfo>> {
+        self.discover_skills()
+    }
+
+    pub fn list_talons(&self) -> Vec<&SkillEntry> {
+        self.list_skills()
+    }
+
+    pub fn get_talon(&self, name: &str) -> Option<&SkillEntry> {
+        self.get_skill(name)
+    }
+
+    pub fn search_talons(&self, query: &str) -> Vec<&SkillEntry> {
+        self.search_skills(query)
+    }
+
+    pub fn add_talon(&mut self, path: PathBuf) -> Result<String> {
+        self.add_skill(path)
+    }
+
+    pub fn remove_talon(&mut self, name: &str) -> Result<()> {
+        self.remove_skill(name)
+    }
 }
 
-impl Default for TalonRegistry {
+impl Default for SkillRegistry {
     fn default() -> Self {
         Self::new().unwrap_or_else(|_| Self {
-            talons_dir: PathBuf::from("./talons"),
-            index: TalonIndex::default(),
+            skills_dir: PathBuf::from("./skills"),
+            index: SkillIndex::default(),
         })
     }
+}
+
+fn default_skills_dir() -> Result<PathBuf> {
+    if let Ok(dir) = std::env::var("FEMTO_SKILLS_DIR") {
+        return Ok(PathBuf::from(dir));
+    }
+
+    if let Ok(dir) = std::env::var("FEMTO_TALONS_DIR") {
+        return Ok(PathBuf::from(dir));
+    }
+
+    let data_dir = dirs::data_dir().context("Could not find data directory")?;
+    Ok(data_dir.join("femtoclaw").join("skills"))
+}
+
+fn resolve_manifest_path(path: &Path) -> Result<PathBuf> {
+    let skill_md = path.join(SKILL_MANIFEST);
+    if skill_md.exists() {
+        return Ok(skill_md);
+    }
+
+    let talon_md = path.join(TALON_MANIFEST);
+    if talon_md.exists() {
+        return Ok(talon_md);
+    }
+
+    anyhow::bail!(
+        "SKILL.md not found in {} (legacy SKILL.md is also accepted)",
+        path.display()
+    );
 }
 
 fn copy_dir_recursive(source: &Path, destination: &Path) -> Result<()> {
@@ -215,7 +267,7 @@ fn copy_dir_recursive(source: &Path, destination: &Path) -> Result<()> {
         let entry_path = entry.path();
         let relative = entry_path
             .strip_prefix(source)
-            .context("Failed to calculate relative talon path")?;
+            .context("Failed to calculate relative skill path")?;
 
         if relative.as_os_str().is_empty() {
             continue;
@@ -244,3 +296,7 @@ fn copy_dir_recursive(source: &Path, destination: &Path) -> Result<()> {
 
     Ok(())
 }
+
+pub type TalonIndex = SkillIndex;
+pub type TalonEntry = SkillEntry;
+pub type TalonRegistry = SkillRegistry;

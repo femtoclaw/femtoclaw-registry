@@ -1,22 +1,15 @@
-// lib.rs - This file is part of FemtoClaw
-// Copyright (c) 2026 FemtoClaw Developers and Contributors
-// Description:
-//     FemtoClaw Talon Registry - Core types and traits for Talon management.
-//     A Talon is a self-contained capability extension for FemtoClaw.
-//     This module defines the manifest format and core data structures.
-
-//! FemtoClaw Talon Registry.
+//! FemtoClaw Skill Registry.
 //!
-//! A Talon is a self-contained capability extension for FemtoClaw.
-//! Talons can be published, versioned, and shared.
+//! A Skill is a self-contained capability extension for FemtoClaw.
+//! Skills can be published, versioned, and shared.
 //!
-//! ## Talon Structure
+//! ## Skill Structure
 //!
-//! A Talon is a directory containing:
-//! - `TALON.md` - Manifest defining the talon
+//! A Skill is a directory containing:
+//! - `SKILL.md` - Manifest defining the skill
 //! - Supporting files (scripts, configs, etc.)
 //!
-//! ## TALON.md Format
+//! ## SKILL.md Format
 //!
 //! ```markdown
 //! ---
@@ -28,19 +21,13 @@
 //! tags: [github, devtools, automation]
 //! ---
 //!
-//! # GitHub Talon
+//! # GitHub Skill
 //!
 //! Provides GitHub integration including:
 //! - Issue management
 //! - Pull request operations
 //! - Workflow triggers
-//!
-//! ## Requirements
-//! - GitHub CLI (gh) installed
-//! - GitHub token (GH_TOKEN env var)
-//!
-//! ## Usage
-//! This talon enables FemtoClaw to interact with GitHub repositories.
+//! ```
 
 use serde::{Deserialize, Serialize};
 
@@ -48,11 +35,11 @@ pub mod cli;
 pub mod loader;
 pub mod registry;
 
-pub use loader::TalonLoader;
-pub use registry::{TalonIndex, TalonRegistry};
+pub use loader::SkillLoader;
+pub use registry::{SkillEntry, SkillIndex, SkillRegistry};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TalonManifest {
+pub struct SkillManifest {
     pub name: String,
     pub version: String,
     pub description: String,
@@ -62,17 +49,17 @@ pub struct TalonManifest {
     pub tags: Vec<String>,
     pub repository: Option<String>,
     pub homepage: Option<String>,
-    pub runtime: Option<TalonRuntime>,
+    pub runtime: Option<SkillRuntime>,
     #[serde(default)]
     pub permissions: Vec<String>,
     #[serde(default)]
     pub environment: Vec<EnvVar>,
     #[serde(default)]
-    pub commands: Vec<TalonCommand>,
+    pub commands: Vec<SkillCommand>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TalonRuntime {
+pub struct SkillRuntime {
     pub kind: String,
     pub version: Option<String>,
 }
@@ -86,7 +73,7 @@ pub struct EnvVar {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TalonCommand {
+pub struct SkillCommand {
     pub name: String,
     pub description: String,
     pub args: Vec<CommandArg>,
@@ -101,13 +88,13 @@ pub struct CommandArg {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TalonInfo {
-    pub manifest: TalonManifest,
+pub struct SkillInfo {
+    pub manifest: SkillManifest,
     pub path: std::path::PathBuf,
     pub installed: bool,
 }
 
-impl TalonManifest {
+impl SkillManifest {
     pub fn parse(content: &str) -> anyhow::Result<Self> {
         let mut sections = content.splitn(3, "---");
         let _ = sections.next();
@@ -115,11 +102,16 @@ impl TalonManifest {
             .next()
             .map(str::trim)
             .filter(|s| !s.is_empty())
-            .ok_or_else(|| anyhow::anyhow!("Invalid TALON.md format: missing frontmatter"))?;
+            .ok_or_else(|| anyhow::anyhow!("Invalid SKILL.md format: missing frontmatter"))?;
 
-        let manifest: TalonManifest = serde_yaml::from_str(frontmatter)
+        let manifest: SkillManifest = serde_yaml::from_str(frontmatter)
             .map_err(|e| anyhow::anyhow!("Failed to parse manifest: {}", e))?;
 
         Ok(manifest)
     }
 }
+
+pub type TalonManifest = SkillManifest;
+pub type TalonRuntime = SkillRuntime;
+pub type TalonCommand = SkillCommand;
+pub type TalonInfo = SkillInfo;

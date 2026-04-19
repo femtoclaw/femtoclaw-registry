@@ -1,4 +1,4 @@
-# FemtoClaw Talon Registry
+# FemtoClaw Skill Registry
 
 **Version:** 1.0.3  
 **License:** Apache-2.0
@@ -7,62 +7,62 @@
 
 ## Overview
 
-FemtoClaw Talon Registry is the package management system for FemtoClaw Talons. A **Talon** (from Latin *talon* meaning "claw") is a self-contained capability extension for FemtoClaw.
+FemtoClaw Skill Registry is the package management system for FemtoClaw Skills. A **Skill** is a self-contained capability extension for FemtoClaw.
 
 This registry system enables:
-- **Publishing** Talons to local or remote registries
-- **Discovering** available Talons
-- **Installing** Talons into your FemtoClaw runtime
-- **Versioning** Talons with semantic versioning
-- **Searching** Talons by name, tag, or description
+- **Publishing** Skills to local or remote registries
+- **Discovering** available Skills
+- **Installing** Skills into your FemtoClaw runtime
+- **Versioning** Skills with semantic versioning
+- **Searching** Skills by name, tag, or description
 
 ---
 
 ## Quick Start
 
 ```bash
-# Install the Talon CLI
+# Install the Skill CLI
 cargo install femtoclaw-registry
 
-# Initialize a talons directory
-talon init
+# Initialize a skills directory
+skill init
 
-# Add a Talon from a local directory
-talon add ./my-talon
+# Add a Skill from a local directory
+skill add ./my-skill
 
-# List installed Talons
-talon list
+# List installed Skills
+skill list
 
-# Search for Talons
-talon search github
+# Search for Skills
+skill search github
 
-# Get info about a Talon
-talon info github
+# Get info about a Skill
+skill info github
 
-# Discover Talons in the directory
-talon discover
+# Discover Skills in the directory
+skill discover
 
-# Remove a Talon
-talon remove github
+# Remove a Skill
+skill remove github
 ```
 
 ---
 
-## What is a Talon?
+## What is a Skill?
 
-A Talon is a self-contained extension that provides additional capabilities to FemtoClaw. Think of Talons like apps for your phone - they extend what FemtoClaw can do.
+A Skill is a self-contained extension that provides additional capabilities to FemtoClaw. Think of Skills like apps for your phone - they extend what FemtoClaw can do.
 
-### Talon Structure
+### Skill Structure
 
 ```
-my-talon/
-├── TALON.md          # Manifest file (required)
+my-skill/
+├── SKILL.md          # Manifest file (required)
 ├── src/              # Source code (optional)
 ├── scripts/          # Helper scripts (optional)
 └── config/          # Configuration files (optional)
 ```
 
-### TALON.md Format
+### SKILL.md Format
 
 ```yaml
 ---
@@ -72,10 +72,10 @@ description: GitHub integration for issues, PRs, and workflows
 author: femtoclaw
 license: MIT
 tags: [github, devtools, automation]
-repository: https://github.com/femtoclaw/talon-github
+repository: https://github.com/femtoclaw/skill-github
 ---
 
-# GitHub Talon
+# GitHub Skill
 
 Provides GitHub integration including:
 - Issue management
@@ -87,14 +87,14 @@ Provides GitHub integration including:
 - GitHub token (GH_TOKEN env var)
 
 ## Usage
-This talon enables FemtoClaw to interact with GitHub repositories.
+This skill enables FemtoClaw to interact with GitHub repositories.
 ```
 
 ### Manifest Fields
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `name` | Yes | Unique Talon name (lowercase, hyphenated) |
+| `name` | Yes | Unique Skill name (lowercase, hyphenated) |
 | `version` | Yes | Semantic version (e.g., 1.0.0) |
 | `description` | Yes | One-line description |
 | `author` | No | Author name |
@@ -118,68 +118,69 @@ femtoclaw-registry/
 ├── src/
 │   ├── lib.rs        # Core types and traits
 │   ├── registry.rs   # Local registry management
-│   ├── loader.rs     # Talon loading and discovery
+│   ├── loader.rs     # Skill loading and discovery
 │   ├── cli.rs        # CLI command implementation
 │   └── main.rs       # CLI entry point
 ```
 
 ### Core Types
 
-- **TalonManifest** - Parsed TALON.md metadata
-- **TalonRegistry** - Local Talon index management
-- **TalonLoader** - Load and initialize Talons
-- **TalonInfo** - Runtime information about a Talon
+- **SkillManifest** - Parsed SKILL.md metadata
+- **SkillRegistry** - Local Skill index management
+- **SkillLoader** - Load and initialize Skills
+- **SkillInfo** - Runtime information about a Skill
 
 ---
 
 ## Configuration
 
-### Talons Directory
+### Skills Directory
 
-By default, Talons are stored in:
-- Linux/macOS: `~/.local/share/femtoclaw/talons/`
-- Windows: `%APPDATA%/femtoclaw/talons/`
+By default, Skills are stored in:
+- Linux/macOS: `~/.local/share/femtoclaw/skills/`
+- Windows: `%APPDATA%/femtoclaw/skills/`
 
 You can override this with the `--dir` flag:
 ```bash
-talon --dir ./my-talons list
+skill --dir ./my-skills list
 ```
 
 ### Environment Variables
 
 | Variable | Description |
 |----------|-------------|
-| `FEMTO_TALONS_DIR` | Override default Talons directory |
+| `FEMTO_SKILLS_DIR` | Override default Skills directory |
+| `FEMTO_TALONS_DIR` | Legacy alias for the skills directory |
 
 ---
 
-## Creating a Talon
+## Creating a Skill
 
 ### 1. Create the directory structure
 
 ```bash
-mkdir -p my-talon
-cd my-talon
+mkdir -p my-skill
+cd my-skill
 ```
 
-### 2. Create TALON.md
+### 2. Create SKILL.md
 
 ```yaml
 ---
-name: my-talon
+name: my-skill
 version: 0.1.0
-description: My custom talon
+description: My custom skill
 author: Your Name
 license: MIT
 tags: [custom, example]
 ---
 
-# My Talon
+# My Skill
 
-Description of what this talon does.
+Description of what this skill does.
 
 ## Usage
-How to use this talon.
+How to use this skill.
 ```
 
 ### 3. Add supporting files
@@ -191,8 +192,8 @@ How to use this talon.
 ### 4. Test locally
 
 ```bash
-talon add ./my-talon
-talon list
+skill add ./my-skill
+skill list
 ```
 
 ---
@@ -200,9 +201,9 @@ talon list
 ## Roadmap
 
 - [ ] **v1.1.0** - Remote registry support
-- [ ] **v1.2.0** - TalonHub publishing
+- [ ] **v1.2.0** - Skill hub publishing
 - [ ] **v1.3.0** - Version constraints
-- [ ] **v1.4.0** - Signed talons
+- [ ] **v1.4.0** - Signed skills
 - [ ] **v1.5.0** - Plugin system
 
 ---
