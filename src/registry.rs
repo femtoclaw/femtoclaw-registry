@@ -11,7 +11,6 @@ use walkdir::WalkDir;
 use crate::{SkillInfo, SkillManifest};
 
 const SKILL_MANIFEST: &str = "SKILL.md";
-const TALON_MANIFEST: &str = "SKILL.md";
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct SkillIndex {
@@ -93,11 +92,7 @@ impl SkillRegistry {
             .filter_map(|e| e.ok())
         {
             let path = entry.path();
-            if path.is_file()
-                && path
-                    .file_name()
-                    .is_some_and(|n| n == SKILL_MANIFEST || n == TALON_MANIFEST)
-            {
+            if path.is_file() && path.file_name().is_some_and(|n| n == SKILL_MANIFEST) {
                 if let Some(skill_path) = path.parent() {
                     let manifest_path = skill_path.join(path.file_name().unwrap());
                     if let Ok(manifest) = fs::read_to_string(&manifest_path) {
@@ -167,10 +162,6 @@ impl SkillRegistry {
         fs::create_dir_all(&dest)?;
         copy_dir_recursive(&path, &dest)?;
 
-        if !dest.join(SKILL_MANIFEST).exists() && dest.join(TALON_MANIFEST).exists() {
-            fs::rename(dest.join(TALON_MANIFEST), dest.join(SKILL_MANIFEST))?;
-        }
-
         self.index.skills.insert(
             name.clone(),
             SkillEntry {
@@ -197,30 +188,6 @@ impl SkillRegistry {
         }
         Ok(())
     }
-
-    pub fn discover_talons(&mut self) -> Result<Vec<SkillInfo>> {
-        self.discover_skills()
-    }
-
-    pub fn list_talons(&self) -> Vec<&SkillEntry> {
-        self.list_skills()
-    }
-
-    pub fn get_talon(&self, name: &str) -> Option<&SkillEntry> {
-        self.get_skill(name)
-    }
-
-    pub fn search_talons(&self, query: &str) -> Vec<&SkillEntry> {
-        self.search_skills(query)
-    }
-
-    pub fn add_talon(&mut self, path: PathBuf) -> Result<String> {
-        self.add_skill(path)
-    }
-
-    pub fn remove_talon(&mut self, name: &str) -> Result<()> {
-        self.remove_skill(name)
-    }
 }
 
 impl Default for SkillRegistry {
@@ -237,10 +204,6 @@ fn default_skills_dir() -> Result<PathBuf> {
         return Ok(PathBuf::from(dir));
     }
 
-    if let Ok(dir) = std::env::var("FEMTO_TALONS_DIR") {
-        return Ok(PathBuf::from(dir));
-    }
-
     let data_dir = dirs::data_dir().context("Could not find data directory")?;
     Ok(data_dir.join("femtoclaw").join("skills"))
 }
@@ -251,15 +214,7 @@ fn resolve_manifest_path(path: &Path) -> Result<PathBuf> {
         return Ok(skill_md);
     }
 
-    let talon_md = path.join(TALON_MANIFEST);
-    if talon_md.exists() {
-        return Ok(talon_md);
-    }
-
-    anyhow::bail!(
-        "SKILL.md not found in {} (legacy SKILL.md is also accepted)",
-        path.display()
-    );
+    anyhow::bail!("SKILL.md not found in {}", path.display());
 }
 
 fn copy_dir_recursive(source: &Path, destination: &Path) -> Result<()> {
@@ -296,7 +251,3 @@ fn copy_dir_recursive(source: &Path, destination: &Path) -> Result<()> {
 
     Ok(())
 }
-
-pub type TalonIndex = SkillIndex;
-pub type TalonEntry = SkillEntry;
-pub type TalonRegistry = SkillRegistry;

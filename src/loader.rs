@@ -6,7 +6,6 @@ use std::path::PathBuf;
 use crate::{SkillInfo, SkillManifest, SkillRegistry};
 
 const SKILL_MANIFEST: &str = "SKILL.md";
-const TALON_MANIFEST: &str = "SKILL.md";
 
 pub struct SkillLoader {
     registry: SkillRegistry,
@@ -33,11 +32,7 @@ impl SkillLoader {
             .get_skill(name)
             .ok_or_else(|| anyhow::anyhow!("Skill '{}' not found", name))?;
 
-        let manifest_path = if entry.path.join(SKILL_MANIFEST).exists() {
-            entry.path.join(SKILL_MANIFEST)
-        } else {
-            entry.path.join(TALON_MANIFEST)
-        };
+        let manifest_path = entry.path.join(SKILL_MANIFEST);
         let content = std::fs::read_to_string(&manifest_path)?;
         let manifest = SkillManifest::parse(&content)?;
 
@@ -94,10 +89,6 @@ impl SkillLoader {
 
         Ok(prompt)
     }
-
-    pub fn load_talon(&self, name: &str) -> Result<SkillInfo> {
-        self.load_skill(name)
-    }
 }
 
 impl Default for SkillLoader {
@@ -121,6 +112,3 @@ pub struct CapabilityArg {
     pub r#type: String,
     pub required: bool,
 }
-
-pub type TalonLoader = SkillLoader;
-pub type TalonCapability = SkillCapability;

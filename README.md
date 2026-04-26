@@ -150,7 +150,6 @@ skill --dir ./my-skills list
 | Variable | Description |
 |----------|-------------|
 | `FEMTO_SKILLS_DIR` | Override default Skills directory |
-| `FEMTO_TALONS_DIR` | Legacy alias for the skills directory |
 
 ---
 

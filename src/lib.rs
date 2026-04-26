@@ -110,8 +110,3 @@ impl SkillManifest {
         Ok(manifest)
     }
 }
-
-pub type TalonManifest = SkillManifest;
-pub type TalonRuntime = SkillRuntime;
-pub type TalonCommand = SkillCommand;
-pub type TalonInfo = SkillInfo;
